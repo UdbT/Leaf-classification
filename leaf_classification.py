@@ -15,10 +15,15 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import KFold
     
-collection = pd.read_csv('output_train.csv')
+collection = pd.read_csv('output_train.csv', index_col=0)
+collection.reset_index(inplace=True)
+collection.rename(columns={'index':'id'}, inplace=True)
 
 outter_train = pd.read_csv('train.csv')
-test = pd.read_csv('output_test.csv')
+
+test = pd.read_csv('output_test.csv', index_col=0)
+test.reset_index(inplace=True)
+test.rename(columns={'index':'id'}, inplace=True)
 
 # For null checking
 sel_df = collection
@@ -47,7 +52,7 @@ def encode(train,test):
     le = LabelEncoder().fit(train.species) 
     labels = le.transform(train.species)           # encode species strings
     classes = list(le.classes_)                    # save column names for submission
-    test_ids = test.id 
+    test_ids = test.loc[:,'id'].values
     
     train = train.loc[:,'Mean':'area/rounded_length']
     
@@ -66,7 +71,7 @@ classifiers = [
     KNeighborsClassifier(3),
     NuSVC(probability=True),
     DecisionTreeClassifier(),
-    RandomForestClassifier(),
+    RandomForestClassifier(n_estimators=200, criterian='entrophy'),
     AdaBoostClassifier(),
     GaussianNB(),
     LinearDiscriminantAnalysis(),
