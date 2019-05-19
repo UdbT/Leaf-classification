@@ -4,6 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg       # reading images to numpy arrays
 import random
+from sklearn import preprocessing
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
@@ -29,24 +30,14 @@ test.rename(columns={'index':'id'}, inplace=True)
 sel_df = collection
 sel_df = sel_df.drop('species',1)
 
-def rescaling(column):
-    collection[column] = (collection[column]-collection[column].min())/(collection[column].max() - collection[column].min())
-def rescaling_test(column):
-    test[column] = (test[column]-test[column].min())/(test[column].max() - test[column].min())
-    
-rescaling_test('Mean')
-rescaling_test('Variance')
-rescaling_test('total_maxima')
-rescaling_test('total_minima')
-rescaling_test('axis-y/axis-x')
-rescaling_test('area/rounded_length')
+# Create a minimum and maximum processor object
+min_max_scaler = preprocessing.MinMaxScaler()
 
-rescaling('Mean')
-rescaling('Variance')
-rescaling('total_maxima')
-rescaling('total_minima')
-rescaling('axis-y/axis-x')
-rescaling('area/rounded_length')
+# Max Min Rescaling
+column_list = ['Mean', 'Variance', 'total_maxima', 'total_minima', 'axis-y/axis-x', 'area/rounded_length']
+for column in column_list:
+    for dataset in [collection, test]:
+        dataset[column] = pd.DataFrame(min_max_scaler.fit_transform(dataset[[column]].values.astype(float)))
     
 def encode(train,test):
     le = LabelEncoder().fit(train.species) 
@@ -61,21 +52,21 @@ def encode(train,test):
 train, labels, classes, test, test_ids, le = encode(collection, test)
 
 # Check Null
-plt.figure(1,figsize=(15,9)) 
-ax = sns.heatmap(sel_df.isnull(),yticklabels=False,cbar=False,cmap='viridis') 
-ax.set_xticklabels(sel_df,rotation =90) 
-ax.figure.tight_layout()
+# plt.figure(1,figsize=(15,9)) 
+# ax = sns.heatmap(sel_df.isnull(),yticklabels=False,cbar=False,cmap='viridis') 
+# ax.set_xticklabels(sel_df,rotation =90) 
+# ax.figure.tight_layout()
 
 #Find most accurate clssifier
 classifiers = [
-    KNeighborsClassifier(3),
-    NuSVC(probability=True),
-    DecisionTreeClassifier(),
-    RandomForestClassifier(n_estimators=200, criterian='entrophy'),
-    AdaBoostClassifier(),
-    GaussianNB(),
-    LinearDiscriminantAnalysis(),
-    QuadraticDiscriminantAnalysis()
+    # KNeighborsClassifier(3),
+    # NuSVC(probability=True),
+    # DecisionTreeClassifier(),
+    RandomForestClassifier(n_estimators=200, criterion='entropy'),
+    # AdaBoostClassifier(),
+    # GaussianNB(),
+    # LinearDiscriminantAnalysis(),
+    # QuadraticDiscriminantAnalysis()
 ]
 
 # 10 fold cross validation
@@ -111,14 +102,19 @@ collect = collect.sort_values('Accuracy',ascending=False)
 for clf in classifiers:
     if clf.__class__.__name__ == collect.idxmax()[0]:
         selected_clf = clf
+        print("Selected classifiers:", selected_clf)
         break
 
-#selected_clf = LinearDiscriminantAnalysis()
 # Fit data to classification madel
 selected_clf.fit(X,y)
 
 # Result
 predicted = selected_clf.predict(test.loc[:,'Mean':'area/rounded_length'])
+
+# Making the Confusion Matrix
+# from sklearn.metrics import confusion_matrix
+# cm = confusion_matrix(list(test['species']), le.inverse_transform(predicted))
+# print(cm)
 
 # Map image id with predicted result
 predicted_table = pd.DataFrame({'id':list(test.id), 'species':list(le.inverse_transform(predicted))})
@@ -136,14 +132,14 @@ for i in range(1,20):
     # Random test
     random_test = random.choice(list(predicted_table.id))
     
-    # Actual image from predicted_table(id)
+    # Actual image from predicted_table
     img_real = mpimg.imread('images_resize//'+str(random_test)+'.jpg')
-        
+    
     result_species = predicted_table.loc[predicted_table['id'] == random_test].iloc[0]['species']
     # Match species from predicted_table with reference_table to define pic of predicted species
     predict_pic = sample_table.loc[sample_table['species'] == result_species].iloc[0]['id']
     
-    # Predicted image from predicted_table(species)
+    # Predicted image from predicted_table
     img_predict = mpimg.imread('images_resize//'+str(predict_pic)+'.jpg')
         
     plt.title(result_species)

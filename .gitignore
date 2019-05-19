@@ -1,0 +1,21 @@
+
+# Ignore everything
+*
+
+# But not these files...
+!.gitignore
+!feature_extraction.py
+!leaf_classification.py
+!test.csv
+!train.csv
+!images_resize
+
+# Dependency list
+!requirements.txt
+
+# ...even if they are in subdirectories
+!*/
+
+# if the files to be tracked are in subdirectories
+!*/a/b/file1.txt
+!*/a/b/c/*
