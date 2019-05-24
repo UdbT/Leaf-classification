@@ -27,23 +27,11 @@ def calculateDistance(x1,y1,x2,y2):
      dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)  
      return dist 
 
-# Columns
-columns = [ ]
-columns.append('Mean')
-columns.append('Variance')
-columns.append('total_maxima')
-columns.append('total_minima')
-columns.append('axis-y/axis-x')
-columns.append('area/rounded_length')
-
 # Import train set
 train = pd.read_csv('train.csv')
 
 # Import train set
 test = pd.read_csv('test.csv')
-
-train_collection = pd.DataFrame(columns=columns)
-test_collection = pd.DataFrame(columns=columns)
 
 # Image path and valid extensions
 imageDir = 'images_resize' #specify your path here
@@ -58,6 +46,19 @@ for file in os.listdir(imageDir):
     if extension.lower() not in valid_image_extensions:
         continue
     image_path_list.append(os.path.join(imageDir, file))
+
+# Columns
+columns = list()
+columns.append('Mean')
+columns.append('Variance')
+columns.append('total_maxima')
+columns.append('total_minima')
+columns.append('axis-y/axis-x')
+columns.append('area/rounded_length')
+
+# Build DataFrame for collecting extracted features
+train_collection = pd.DataFrame(columns=columns)
+test_collection = pd.DataFrame(columns=columns)
 
 for file_path in image_path_list:
 
@@ -170,7 +171,7 @@ for file_path in image_path_list:
     continue
     '''
     #Attribute collector
-    attributes = [0 for i in range(6)]
+    attributes = [0 for i in range(len(columns))]
     
     attributes[0] = np.mean(distances)         # Mean of distance between center point and surround point
     attributes[1] = np.var(distances)          # Variance of distance between center point and surround point
@@ -184,15 +185,17 @@ for file_path in image_path_list:
     else:
         test_collection = test_collection.append(pd.DataFrame([attributes],index=[int(name)] , columns=columns))
 
-# Join species column to train_collection
+# Merge extracted features with species
+# Extract genus
+sci_names = train.loc[:,['id', 'species']]
+sci_names['genus'] = sci_names['species'].str.split('_').str.get(0)
+# Merge
 train_collection = train_collection.sort_index()
-species = pd.DataFrame(list(train.loc[:,'species']), index=list(train_collection.index), columns=['species'])
-train_collection = train_collection.join(species)
+train_collection.reset_index(inplace=True)
+train_collection.rename({'index': 'id'}, axis='columns', inplace=True)
 
-# Reorder columns
-cols = list(train_collection)
-cols.insert(0, cols.pop(cols.index('species')))
-train_collection = train_collection.ix[:,cols]
+train_collection = pd.merge(sci_names, train_collection, on='id', how='inner')
+train_collection.set_index('id', inplace=True)
 
 test_collection = test_collection.sort_index()
     
