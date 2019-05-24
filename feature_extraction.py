@@ -8,6 +8,7 @@ import matplotlib.patches as mpatches  # to draw a circle at the mean contour
 import scipy.sparse
 from skimage import measure,io         # to find shape contour
 import scipy.ndimage as ndi            # to determine shape centrality
+from shapely.geometry import Polygon
 
 from pylab import rcParams
                     
@@ -24,10 +25,7 @@ def rgb2gray(rgb):
 
 def calculateDistance(x1,y1,x2,y2):  
      dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)  
-     return dist  
- 
-def PolyArea(x,y):
-    return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
+     return dist 
 
 # Columns
 columns = [ ]
@@ -72,46 +70,61 @@ for file_path in image_path_list:
     
     # using image processing module of scipy to find the center of the leaf
     cy, cx = ndi.center_of_mass(img)
-
-#    plt.imshow(img, cmap='Set3')  # show me the leaf
-#    plt.scatter(cx, cy)           # show me its center
-#    plt.show()
+    # Visualize center point
+    '''
+    plt.imshow(img, cmap='Set3')  # show me the leaf
+    plt.scatter(cx, cy)           # show me its center
+    plt.show()
+    continue
+    exit()
+    '''
 
     # scikit-learn imaging contour finding, returns a list of found edges
-    contours = measure.find_contours(img, .8)
-
+    contours = measure.find_contours(img, 200)
+    
     # from which we choose the longest one
     contour = max(contours, key=len)
-    
+    shape = Polygon(contour)
+    x, y = shape.exterior.xy
+    # Visualize leaf perimeter
+    '''
+    plt.plot(x, y, color='red', alpha=0.7, linewidth=1, solid_capstyle='round')
+    plt.show()
+    exit()
+    '''
+
     distances = []
     
     for y, x in contour:
         dist = calculateDistance(cx,x,cy,y)
         distances.append(dist)
-    
+    '''
+    plt.plot(distances)
+    plt.show()
+    continue
+    exit()
+    '''
+
     # axis-y length & axis-x length
-    axis_y_len = pd.DataFrame(contour).loc[:,0].max()-pd.DataFrame(contour).loc[:,0].min()
-    axis_x_len = pd.DataFrame(contour).loc[:,1].max()-pd.DataFrame(contour).loc[:,1].min()
+    bounds = shape.bounds # (minx, miny, maxx, maxy)
+    axis_y_len = bounds[3] - bounds[1]
+    axis_x_len = bounds[2] - bounds[0]
     
     # Find leaf area
-    area = PolyArea(contour[::,1],contour[::,0])
-    
-    # Find rounded length
-    rounded_length = len(contour[::,1])
-    
-#    print(pd.DataFrame(contour).loc[:,1].max())
-#    print(pd.DataFrame(contour).loc[:,1].min())
-#    
-#    print(pd.DataFrame(contour).loc[:,0].max())
-#    print(pd.DataFrame(contour).loc[:,0].min())
-#    print(ratio)
-    
-#    let us see the contour that we hopefully found
-#    plt.plot(contour[::,1], contour[::,0], linewidth=0.5)  # (I will explain this [::,x] later)
-#    plt.imshow(img, cmap='Set3')
-#    plt.scatter(cx, cy)
-#    plt.show()
+    area = shape.area
 
+    # Find rounded length
+    rounded_length = shape.length
+
+    # Visualize perimeter along with center point
+    '''
+    plt.plot(contour[::,1], contour[::,0], linewidth=0.5)  # (I will explain this [::,x] later)
+    plt.imshow(img, cmap='Set3')
+    plt.scatter(cx, cy)
+    plt.show()
+    exit()
+    '''
+    
     # move the center to (0,0)
     contour[::,1] -= cx  # demean X
     contour[::,0] -= cy  # demean Y
@@ -129,30 +142,33 @@ for file_path in image_path_list:
     maxima = len(polar_contour[::,1][c_max_index])
     minima = len(polar_contour[::,1][c_min_index])
     
-#    print(len(polar_contour[::,1][c_max_index]))
-#    print(len(polar_contour[::,1][c_min_index]))
-#    plt.subplot(121)
-#    plt.scatter(polar_contour[::,1], polar_contour[::,0], 
-#                linewidth=0, s=2, c='k')
-#    plt.scatter(polar_contour[::,1][c_max_index], 
-#                polar_contour[::,0][c_max_index], 
-#                linewidth=0, s=30, c='b')
-#    plt.scatter(polar_contour[::,1][c_min_index], 
-#                polar_contour[::,0][c_min_index], 
-#                linewidth=0, s=30, c='r')
-#    
-#    plt.subplot(122)
-#    plt.scatter(contour[::,1], contour[::,0], 
-#                linewidth=0, s=2, c='k')
-#    plt.scatter(contour[::,1][c_max_index], 
-#                contour[::,0][c_max_index], 
-#                linewidth=0, s=30, c='b')
-#    plt.scatter(contour[::,1][c_min_index], 
-#                contour[::,0][c_min_index], 
-#                linewidth=0, s=30, c='r')
-#    
-#    plt.show()
+    # Visualize maxima and minima
+    '''
+    print(maxima)
+    print(minima)
+    plt.subplot(121)
+    plt.scatter(polar_contour[::,1], polar_contour[::,0], 
+                linewidth=0, s=2, c='k')
+    plt.scatter(polar_contour[::,1][c_max_index], 
+                polar_contour[::,0][c_max_index], 
+                linewidth=0, s=30, c='b')
+    plt.scatter(polar_contour[::,1][c_min_index], 
+                polar_contour[::,0][c_min_index], 
+                linewidth=0, s=30, c='r')
     
+    plt.subplot(122)
+    plt.scatter(contour[::,1], contour[::,0], 
+                linewidth=0, s=2, c='k')
+    plt.scatter(contour[::,1][c_max_index], 
+                contour[::,0][c_max_index], 
+                linewidth=0, s=30, c='b')
+    plt.scatter(contour[::,1][c_min_index], 
+                contour[::,0][c_min_index], 
+                linewidth=0, s=30, c='r')
+    
+    plt.show()
+    continue
+    '''
     #Attribute collector
     attributes = [0 for i in range(6)]
     

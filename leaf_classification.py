@@ -45,17 +45,19 @@ def encode(train,test):
     classes = list(le.classes_)                    # save column names for submission
     test_ids = test.loc[:,'id'].values
     
-    train = train.loc[:,'Mean':'area/rounded_length']
-    
+    train = train.loc[:,column_list]
+
     return train, labels, classes, test, test_ids, le
 
 train, labels, classes, test, test_ids, le = encode(collection, test)
 
 # Check Null
-# plt.figure(1,figsize=(15,9)) 
-# ax = sns.heatmap(sel_df.isnull(),yticklabels=False,cbar=False,cmap='viridis') 
-# ax.set_xticklabels(sel_df,rotation =90) 
-# ax.figure.tight_layout()
+'''
+plt.figure(1,figsize=(15,9)) 
+ax = sns.heatmap(sel_df.isnull(),yticklabels=False,cbar=False,cmap='viridis') 
+ax.set_xticklabels(sel_df,rotation =90) 
+ax.figure.tight_layout()
+'''
 
 #Find most accurate clssifier
 classifiers = [
@@ -110,11 +112,6 @@ selected_clf.fit(X,y)
 
 # Result
 predicted = selected_clf.predict(test.loc[:,'Mean':'area/rounded_length'])
-
-# Making the Confusion Matrix
-# from sklearn.metrics import confusion_matrix
-# cm = confusion_matrix(list(test['species']), le.inverse_transform(predicted))
-# print(cm)
 
 # Map image id with predicted result
 predicted_table = pd.DataFrame({'id':list(test.id), 'species':list(le.inverse_transform(predicted))})
