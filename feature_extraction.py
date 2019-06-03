@@ -171,7 +171,7 @@ for file_path in image_path_list:
     continue
     '''
     #Attribute collector
-    attributes = [0 for i in range(len(columns))]
+    attributes = [0] * len(columns)
     
     attributes[0] = np.mean(distances)         # Mean of distance between center point and surround point
     attributes[1] = np.var(distances)          # Variance of distance between center point and surround point

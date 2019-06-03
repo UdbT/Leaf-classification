@@ -16,9 +16,7 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import KFold
     
-collection = pd.read_csv('output_train.csv', index_col=0)
-collection.reset_index(inplace=True)
-collection.rename(columns={'index':'id'}, inplace=True)
+collection = pd.read_csv('output_train.csv')
 
 outter_train = pd.read_csv('train.csv')
 
